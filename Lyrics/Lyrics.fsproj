@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net45</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+
+    <Reference Include="System.Xaml" />
+    <Reference Include="UIAutomationTypes" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Helpers/DependencyObjectHelpers.fs" />
+    <Compile Include="Helpers/ControlsHelpers.fs" />
+    <Compile Include="Helpers/JSON.fs" />
+
+    <Compile Include="Spotify.fs" />
+    <Compile Include="MusixMatch.fs" />
+
+    <Compile Include="MainWindow.fs" />
+
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+</Project>

@@ -67,22 +67,22 @@ type internal MainWindow() as this =
         // Listen to events on Spotify
         spotify.SongChanged.Add <| fun song ->
             this.Dispatcher.InvokeSafe <| fun _ ->
-                titleText.Text   <- song.Title
-                artistText.Text  <- song.Artist
+                titleText.Text  <- song.Title
+                artistText.Text <- song.Artist
 
             captions.Clear()
 
             Async.Start <| async {
-                let! foundLyrics = MusixMatch.getLyrics song.Artist song.Title captions
+                let! _ = MusixMatch.getLyrics song.Artist song.Title captions
 
-                do if foundLyrics then
-                    this.Dispatcher.InvokeSafe <| fun _ ->
-                        captionsList.Items.Clear()
+                do this.Dispatcher.InvokeSafe <| fun _ ->
+                    activeCaption <- null
+                    captionsList.Items.Clear()
 
-                        for caption in captions do
-                            let caption = TextBlock(Text = caption.Text, Style = captionStyle)
+                    for caption in captions do
+                        let caption = TextBlock(Text = caption.Text, Style = captionStyle)
 
-                            ignore <| captionsList.Items.Add(caption)
+                        ignore <| captionsList.Items.Add(caption)
             }
 
         spotify.TimeChanged.Add <| fun position ->

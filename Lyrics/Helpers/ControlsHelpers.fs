@@ -54,9 +54,10 @@ module Binding =
 
 type StyleBuilder<'T>() =
     member val Style = Style(typeof<'T>)
+type TriggerBuilder<'T>(trigger: Trigger) =
+    member val Trigger = trigger
 
 module Style =
-
     let inline empty<'a> = StyleBuilder<'a>()
     let inline forType<'a> = StyleBuilder<'a>()
 
@@ -79,7 +80,38 @@ module Style =
 
         apply(fun s -> s.Setters.Add(Setter(prop, value))) style
 
+    let inline trigger (propGetter: Expr<'a -> 'b>) (value: 'b) (f: TriggerBuilder<'a> -> TriggerBuilder<'a>) (style: StyleBuilder<'a>) =
+        let prop = match propGetter with
+                   | Lambda (_, PropertyGet (_, prop, _)) -> prop
+                   | _ -> invalidArg "propGetter" "Not a property getter."
 
+        let prop = DependencyObjectHelpers.getPropertyFromName(prop.DeclaringType, prop.Name)
+        let builder = TriggerBuilder(Trigger(Property = prop, Value = value))
+
+        apply(fun s -> s.Triggers.Add(f(builder).Trigger)) style
+
+module Trigger =
+    let inline empty<'a> = TriggerBuilder<'a>(Trigger())
+    let inline forType<'a> = TriggerBuilder<'a>(Trigger())
+
+    let inline prop (propGetter: Expr<'a -> 'b>) (value: 'b) =
+        let prop = match propGetter with
+                   | Lambda (_, PropertyGet (_, prop, _)) -> prop
+                   | _ -> invalidArg "propGetter" "Not a property getter."
+
+        let prop = DependencyObjectHelpers.getPropertyFromName(prop.DeclaringType, prop.Name)
+
+        TriggerBuilder(Trigger(Property = prop, Value = value))
+
+    let inline setter (propGetter: Expr<'a -> 'b>) (value: 'b) (trigger: TriggerBuilder<'a>) =
+        let prop = match propGetter with
+                   | Lambda (_, PropertyGet (_, prop, _)) -> prop
+                   | _ -> invalidArg "propGetter" "Not a property getter."
+
+        let prop = DependencyObjectHelpers.getPropertyFromName(prop.DeclaringType, prop.Name)
+
+        trigger.Trigger.Setters.Add(Setter(prop, value))
+        trigger
 
 module Control =
     let inline child child (control : Panel) =

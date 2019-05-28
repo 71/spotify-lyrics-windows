@@ -2,6 +2,7 @@ module Lyrics.Program
 
 open System
 open System.Windows
+open System.Windows.Media
 
 
 /// Defines the application.

@@ -4,8 +4,12 @@ Lyrics
 Lyrics for Spotify, in real-time. Uses [Musixmatch](https://www.musixmatch.com) as a backend,
 but it actually works.
 
-It works, but the UI is **very** simple for now, so it's more of a POC.
+![Screenshot](Assets/screenshot.png)
 
+## Features
+- Minimalistic UI with stay-on-top and auto-scroll features.
+- No input; just launch it and let it do the rest.
+- Song lyrics are automatically cached, for your offline needs.
 
 ## How does it work?
 1. When a song is playing, the title of the main Spotify window is scanned,

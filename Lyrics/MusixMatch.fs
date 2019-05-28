@@ -25,7 +25,7 @@ type Subtitle(json : JSON.Value) =
     member __.Time = time
 
 
-let getLyrics artist song duration (subtitles : List<Subtitle>) =
+let getLyrics artist song (subtitles : List<Subtitle>) =
     let track  = WebUtility.UrlEncode song
     let artist = WebUtility.UrlEncode artist
 
@@ -33,7 +33,7 @@ let getLyrics artist song duration (subtitles : List<Subtitle>) =
             + "?format=json&user_language=en&namespace=lyrics_synched"
             + "&f_subtitle_length_max_deviation=1&subtitle_format=mxm"
             + "&app_id=web-desktop-app-v1.0&usertoken=190511307254ae92ff84462c794732b84754b64a2f051121eff330"
-            + sprintf "&q_track=%s&q_artist=%s&q_duration=%d&f_subtitle_length=%d" track artist duration duration
+            + sprintf "&q_track=%s&q_artist=%s" track artist
 
     async {
         let req = WebRequest.Create(url)

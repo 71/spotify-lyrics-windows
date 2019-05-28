@@ -34,7 +34,7 @@ type internal MainWindow() as this =
     let titleText       = TextBlock()
     let artistText      = TextBlock()
 
-    let captions = List<MusixMatch.Subtitle>()
+    let captions = List<Musixmatch.Subtitle>()
     let captionsList = ItemsControl()
     let mutable activeCaption = null :> TextBlock
 
@@ -73,7 +73,7 @@ type internal MainWindow() as this =
             captions.Clear()
 
             Async.Start <| async {
-                let! _ = MusixMatch.getLyrics song.Artist song.Title captions
+                let! _ = Musixmatch.getLyrics song.Artist song.Title captions
 
                 do this.Dispatcher.InvokeSafe <| fun _ ->
                     activeCaption <- null

@@ -20,7 +20,7 @@
     <Compile Include="Helpers/JSON.fs" />
 
     <Compile Include="Spotify.fs" />
-    <Compile Include="MusixMatch.fs" />
+    <Compile Include="Musixmatch.fs" />
 
     <Compile Include="MainWindow.fs" />
 

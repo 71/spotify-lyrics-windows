@@ -62,26 +62,24 @@ type internal MainWindow() as this =
 
 
     // UI
-    let btn icon =
-        let btn = Button(Style = iconButtonStyle, Content = icon)
+    let btn icon tooltip =
+        Button(Style = iconButtonStyle, Content = icon, ToolTip = tooltip)
 
-        Panel.SetZIndex(btn, 10)
-
-        btn
-
-    let togglebtn onicon officon on =
+    let togglebtn onicon officon on ontooltip offtooltip =
         let content = if !on then onicon else officon
-        let btn = Button(Style = iconButtonStyle, Content = content)
+        let tooltip = if !on then ontooltip else offtooltip
 
-        Panel.SetZIndex(btn, 10)
+        let btn = Button(Style = iconButtonStyle, Content = content, ToolTip = tooltip)
 
         btn.Click.Add <| fun _ ->
             if !on then
                 on := false
                 btn.Content <- officon
+                btn.ToolTip <- offtooltip
             else
                 on := true
                 btn.Content <- onicon
+                btn.ToolTip <- ontooltip
 
         btn
 
@@ -89,11 +87,11 @@ type internal MainWindow() as this =
     let ontop      = ref false
     let fullscreen = ref false
 
-    let autoScrollBtn = togglebtn "\uE8D0" "\uE8CB" autoscroll
-    let onTopBtn      = togglebtn "\uE944" "\uE8A7" ontop
-    let minimizeBtn   =       btn "\uE921"
-    let fullscreenBtn = togglebtn "\uE923" "\uE922" fullscreen
-    let quitBtn       =       btn "\uE8BB"
+    let autoScrollBtn = togglebtn "\uE8D0" "\uE8CB" autoscroll  "Disable auto-scroll" "Enable auto-scroll"
+    let onTopBtn      = togglebtn "\uE944" "\uE8A7" ontop       "Do not stay on top"  "Stay on top"
+    let minimizeBtn   =       btn "\uE921"                      "Minimize"
+    let fullscreenBtn = togglebtn "\uE923" "\uE922" fullscreen  "Restore" "Maximize"
+    let quitBtn       =       btn "\uE8BB"                      "Close"
 
     do
         let m = minimizeBtn.Margin
@@ -128,8 +126,8 @@ type internal MainWindow() as this =
 
                         if !autoscroll then
                             let itemOffset = item.TranslatePoint(Point(), captionsList)
-                            let offset = itemOffset.Y - captionsViewer.ViewportHeight / 2.
-                            let offset = max 0. (min offset captionsViewer.ViewportHeight)
+                            let offset = itemOffset.Y + item.ActualHeight - this.ActualHeight / 2.
+                            let offset = max 0. (min offset captionsList.ActualHeight)
 
                             captionsViewer.ScrollToVerticalOffset(offset)
                     | _ -> ()
@@ -252,6 +250,8 @@ type internal MainWindow() as this =
             if this.WindowState = WindowState.Maximized then
                 fullscreen := true
                 fullscreenBtn.Content <- "\uE923"
+                fullscreenBtn.ToolTip <- "Restore"
             else
                 fullscreen := false
                 fullscreenBtn.Content <- "\uE922"
+                fullscreenBtn.ToolTip <- "Maximize"

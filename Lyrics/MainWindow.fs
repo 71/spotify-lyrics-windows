@@ -83,11 +83,9 @@ type internal MainWindow() as this =
 
         btn
 
-    let autoscroll = ref true
     let ontop      = ref false
     let fullscreen = ref false
 
-    let autoScrollBtn = togglebtn "\uE8D0" "\uE8CB" autoscroll  "Disable auto-scroll" "Enable auto-scroll"
     let onTopBtn      = togglebtn "\uE944" "\uE8A7" ontop       "Do not stay on top"  "Stay on top"
     let minimizeBtn   =       btn "\uE921"                      "Minimize"
     let fullscreenBtn = togglebtn "\uE923" "\uE922" fullscreen  "Restore" "Maximize"
@@ -110,9 +108,21 @@ type internal MainWindow() as this =
     let positionChanged position ms =
         this.Dispatcher.InvokeSafe <| fun _ ->
             if captionsList.Items.Count <> 0 then
-                match activeCaption with
-                | null -> ()
-                | caption -> caption.Style <- captionStyle
+                let visibleHeight = captionsViewer.ActualHeight
+                let viewMid = visibleHeight / 2.
+
+                let absoluteMid = captionsViewer.VerticalOffset + viewMid
+
+                let autoscroll =
+                    match activeCaption with
+                    | null -> true
+                    | caption ->
+                        caption.Style <- captionStyle
+
+                        let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
+
+                        absoluteMid - 50. < activeCaptionOffset &&
+                        activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
 
                 let position = float position + ms
                 let captionIndex = captions.FindLastIndex(fun x -> x.Time <= position)
@@ -124,10 +134,10 @@ type internal MainWindow() as this =
                         activeCaption <- item
                         item.Style <- activeCaptionStyle
 
-                        if !autoscroll then
-                            let itemOffset = item.TranslatePoint(Point(), captionsList)
-                            let offset = itemOffset.Y + item.ActualHeight - this.ActualHeight / 2.
-                            let offset = max 0. (min offset captionsList.ActualHeight)
+                        if autoscroll then
+                            let itemOffset = item.TranslatePoint(Point(), captionsList).Y
+                            let offset = itemOffset + item.ActualHeight / 2. - this.ActualHeight / 2.
+                            let offset = max 0. offset
 
                             captionsViewer.ScrollToVerticalOffset(offset)
                     | _ -> ()
@@ -146,7 +156,6 @@ type internal MainWindow() as this =
 
         // Setup UI
         let controls = StackPanel(Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right)
-                    |> Control.child autoScrollBtn
                     |> Control.child onTopBtn
                     |> Control.child minimizeBtn
                     |> Control.child fullscreenBtn
@@ -181,6 +190,8 @@ type internal MainWindow() as this =
                 let! _ = Musixmatch.getLyrics song.Artist song.Title captions
 
                 do this.Dispatcher.InvokeSafe <| fun _ ->
+                    captionsViewer.ScrollToTop()
+
                     activeCaption <- null
                     captionsList.Items.Clear()
 

@@ -83,6 +83,8 @@ type internal MainWindow() as this =
 
         btn
 
+    let mutable autoscroll = false
+
     let ontop      = ref false
     let fullscreen = ref false
 
@@ -104,29 +106,31 @@ type internal MainWindow() as this =
     let captionsViewer = ScrollViewer(Content = captionsList,
                                       VerticalScrollBarVisibility = ScrollBarVisibility.Hidden)
 
+    let scrollChanged = ScrollChangedEventHandler(fun _ _ ->
+        let visibleHeight = captionsViewer.ActualHeight
+        let viewMid = visibleHeight / 2.
+
+        let absoluteMid = captionsViewer.VerticalOffset + viewMid
+
+        autoscroll <-
+            match activeCaption with
+            | null -> true
+            | caption ->
+                caption.Style <- captionStyle
+
+                let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
+
+                absoluteMid - 50. < activeCaptionOffset &&
+                activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
+    )
+
+    do captionsViewer.ScrollChanged.AddHandler scrollChanged
 
     let positionChanged position ms =
         this.Dispatcher.InvokeSafe <| fun _ ->
             if captionsList.Items.Count <> 0 then
-                let visibleHeight = captionsViewer.ActualHeight
-                let viewMid = visibleHeight / 2.
-
-                let absoluteMid = captionsViewer.VerticalOffset + viewMid
-
-                let autoscroll =
-                    match activeCaption with
-                    | null -> true
-                    | caption ->
-                        caption.Style <- captionStyle
-
-                        let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
-
-                        absoluteMid - 50. < activeCaptionOffset &&
-                        activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
-
                 let position = float position + ms
                 let captionIndex = captions.FindLastIndex(fun x -> x.Time <= position)
-                let captionIndex = if captionIndex = -1 then captions.Count - 1 else captionIndex
 
                 if captionIndex <> -1 && captionIndex < captionsList.Items.Count then
                     match captionsList.Items.[captionIndex] with
@@ -139,7 +143,9 @@ type internal MainWindow() as this =
                             let offset = itemOffset + item.ActualHeight / 2. - this.ActualHeight / 2.
                             let offset = max 0. offset
 
+                            captionsViewer.ScrollChanged.RemoveHandler scrollChanged
                             captionsViewer.ScrollToVerticalOffset(offset)
+                            captionsViewer.ScrollChanged.AddHandler scrollChanged
                     | _ -> ()
                 else
                     activeCaption <- null
@@ -191,6 +197,7 @@ type internal MainWindow() as this =
 
                 do this.Dispatcher.InvokeSafe <| fun _ ->
                     captionsViewer.ScrollToTop()
+                    autoscroll <- true
 
                     activeCaption <- null
                     captionsList.Items.Clear()

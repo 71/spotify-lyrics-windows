@@ -21,9 +21,9 @@ type internal MainWindow() as this =
     static let captionStyle =
         Style.forType<TextBlock>
         |> Style.setter <@ fun x -> x.TextAlignment       @> TextAlignment.Center
-        |> Style.setter <@ fun x -> x.Opacity             @> 0.7
+        |> Style.setter <@ fun x -> x.Opacity             @> 0.8
         |> Style.setter <@ fun x -> x.HorizontalAlignment @> HorizontalAlignment.Stretch
-        |> Style.setter <@ fun x -> x.FontSize            @> 24.0
+        |> Style.setter <@ fun x -> x.FontSize            @> 32.0
         |> Style.setter <@ fun x -> x.Foreground          @> (Brushes.White :> _)
         |> Style.setter <@ fun x -> x.Margin              @> (Thickness(0., 5., 0., 5.))
         |> Style.setter <@ fun x -> x.TextWrapping        @> TextWrapping.Wrap
@@ -33,7 +33,7 @@ type internal MainWindow() as this =
         Style.forType<TextBlock>
         |> Style.basedOn captionStyle
         |> Style.setter <@ fun x -> x.Opacity    @> 1.0
-        |> Style.setter <@ fun x -> x.FontSize   @> 32.0
+        |> Style.setter <@ fun x -> x.FontSize   @> 46.0
         |> Style.setter <@ fun x -> x.FontWeight @> FontWeights.Bold
         |> Style.build
 
@@ -84,6 +84,7 @@ type internal MainWindow() as this =
         btn
 
     let mutable autoscroll = false
+    let mutable autoscrolling = 0
 
     let ontop      = ref false
     let fullscreen = ref false
@@ -102,29 +103,27 @@ type internal MainWindow() as this =
         fullscreenBtn.FontSize <- 12.
         quitBtn.FontSize       <- 12.
 
-    let captionsList = ItemsControl()
+    let captionsList = ItemsControl(Margin = Thickness(0., 14., 0., 12.))
     let captionsViewer = ScrollViewer(Content = captionsList,
                                       VerticalScrollBarVisibility = ScrollBarVisibility.Hidden)
 
-    let scrollChanged = ScrollChangedEventHandler(fun _ _ ->
-        let visibleHeight = captionsViewer.ActualHeight
-        let viewMid = visibleHeight / 2.
+    do captionsViewer.ScrollChanged.Add <| fun _ ->
+        if autoscrolling > 0 then
+            autoscrolling <- autoscrolling - 1
+        else
+            let visibleHeight = captionsViewer.ActualHeight
+            let viewMid = visibleHeight / 2.
 
-        let absoluteMid = captionsViewer.VerticalOffset + viewMid
+            let absoluteMid = captionsViewer.VerticalOffset + viewMid
 
-        autoscroll <-
-            match activeCaption with
-            | null -> true
-            | caption ->
-                caption.Style <- captionStyle
+            autoscroll <-
+                match activeCaption with
+                | null -> true
+                | caption ->
+                    let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
 
-                let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
-
-                absoluteMid - 50. < activeCaptionOffset &&
-                activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
-    )
-
-    do captionsViewer.ScrollChanged.AddHandler scrollChanged
+                    absoluteMid - 50. < activeCaptionOffset &&
+                    activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
 
     let positionChanged position ms =
         this.Dispatcher.InvokeSafe <| fun _ ->
@@ -134,18 +133,21 @@ type internal MainWindow() as this =
 
                 if captionIndex <> -1 && captionIndex < captionsList.Items.Count then
                     match captionsList.Items.[captionIndex] with
-                    | :? TextBlock as item ->
+                    | :? TextBlock as item when item <> activeCaption ->
+                        if (not << isNull) activeCaption then
+                            activeCaption.Style <- captionStyle
+
                         activeCaption <- item
-                        item.Style <- activeCaptionStyle
+                        activeCaption.Style <- activeCaptionStyle
 
                         if autoscroll then
                             let itemOffset = item.TranslatePoint(Point(), captionsList).Y
                             let offset = itemOffset + item.ActualHeight / 2. - this.ActualHeight / 2.
                             let offset = max 0. offset
 
-                            captionsViewer.ScrollChanged.RemoveHandler scrollChanged
+                            autoscrolling <- autoscrolling + 1
+
                             captionsViewer.ScrollToVerticalOffset(offset)
-                            captionsViewer.ScrollChanged.AddHandler scrollChanged
                     | _ -> ()
                 else
                     activeCaption <- null
@@ -191,9 +193,10 @@ type internal MainWindow() as this =
                 this.Title <- sprintf "Lyrics: %s - %s" song.Artist song.Title
 
             captions.Clear()
+            autoscrolling <- 0
 
             Async.Start <| async {
-                let! _ = Musixmatch.getLyrics song.Artist song.Title captions
+                let! found = Musixmatch.getLyrics song.Artist song.Title captions
 
                 do this.Dispatcher.InvokeSafe <| fun _ ->
                     captionsViewer.ScrollToTop()
@@ -202,10 +205,27 @@ type internal MainWindow() as this =
                     activeCaption <- null
                     captionsList.Items.Clear()
 
-                    for caption in captions do
-                        let caption = TextBlock(Text = caption.Text, Style = captionStyle)
+                    if captions.Count = 0 then
+                        let text = if not found then "Lyrics not found" else "Instrumental song"
+                        let captionElement = TextBlock(Text = text, Style = captionStyle)
 
-                        ignore <| captionsList.Items.Add(caption)
+                        captionElement.Opacity <- 0.6
+
+                        ignore <| captionsList.Items.Add(captionElement)
+                    else
+                        for caption in captions do
+                            let meta = System.String.IsNullOrWhiteSpace caption.Text
+                            let captionElement = TextBlock(Text = caption.Text, Style = captionStyle)
+
+                            if meta then
+                                captionElement.Opacity <- 0.5
+                                captionElement.Text <-
+                                    if caption = captions.[captions.Count - 1] then
+                                        "(end)"
+                                    else
+                                        "(pause)"
+
+                            ignore <| captionsList.Items.Add(captionElement)
             }
 
         let mutable timeChanged = false

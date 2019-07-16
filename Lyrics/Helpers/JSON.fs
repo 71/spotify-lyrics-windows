@@ -32,6 +32,7 @@ let private parseString (s: string) (i : int byref) =
             let c = match s.[i + 1] with
                     | 'n' -> '\n'
                     | '"' -> '"'
+                    | '/' -> '/'
                     | '\\' -> '\\'
                     | 'u' -> let hex = s.Substring(i + 2, 4)
                              i <- i + 4

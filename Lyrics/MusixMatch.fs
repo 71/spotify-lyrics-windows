@@ -44,10 +44,18 @@ let private parseSubtitles json (subtitles : List<Subtitle>) =
                             (JSON.Key "body"
                                 (JSON.Key "subtitle_list"
                                     (JSON.Array arr))))))) when arr.Length > 0 -> Some arr.[0]
+        | JSON.Key "message"
+            (JSON.Key "body"
+                (JSON.Key "macro_calls"
+                    (JSON.Key "matcher.track.get"
+                        (JSON.Key "message"
+                            (JSON.Key "body"
+                                (JSON.Key "track" track)))))) -> Some track
         | _ -> None
 
     match subtitleWrapper with
     | Some (JSON.Key "subtitle" (JSON.Key "subtitle_body" (JSON.String body))) ->
+        // We have subtitles!
         index <- 0
 
         match JSON.parse body &index with
@@ -57,7 +65,12 @@ let private parseSubtitles json (subtitles : List<Subtitle>) =
             true
         | _ -> false
 
+    | Some (JSON.Key "instrumental" (JSON.Int 1)) ->
+        // It's an instrumental song
+        true
+
     | _ -> false
+
 
 let private invalidChars = Regex.Escape(string(Path.GetInvalidFileNameChars()))
 let private invalidRe    = Regex(sprintf "[%s]+" invalidChars)

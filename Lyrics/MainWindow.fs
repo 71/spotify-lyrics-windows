@@ -120,10 +120,11 @@ type internal MainWindow() as this =
                 match activeCaption with
                 | null -> true
                 | caption ->
+                    let threshold = max 50. (visibleHeight / 4.)
                     let activeCaptionOffset = caption.TranslatePoint(Point(), captionsList).Y
 
-                    absoluteMid - 50. < activeCaptionOffset &&
-                    activeCaptionOffset < absoluteMid + 50. + caption.ActualHeight
+                    absoluteMid - threshold < activeCaptionOffset &&
+                    activeCaptionOffset < absoluteMid + threshold + caption.ActualHeight
 
     let positionChanged position ms =
         this.Dispatcher.InvokeSafe <| fun _ ->

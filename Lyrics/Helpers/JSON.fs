@@ -36,7 +36,7 @@ let private parseString (s: string) (i : int byref) =
                     | '\\' -> '\\'
                     | 'u' -> let hex = s.Substring(i + 2, 4)
                              i <- i + 4
-                             char (Int32.Parse(hex, NumberStyles.HexNumber))
+                             char <| Int32.Parse(hex, NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo)
                     |  _  -> failwith "Invalid input."
             i <- i + 2
             str.Append(c)
@@ -82,9 +82,9 @@ let rec parse (s : string) (i : int byref) =
         let isFloat = nbr.IndexOf('.') <> -1
 
         if isFloat then
-            Float (Double.Parse nbr)
+            Float <| Double.Parse(nbr, NumberFormatInfo.InvariantInfo)
         else
-            Int (Int32.Parse nbr)
+            Int <| Int32.Parse(nbr, NumberFormatInfo.InvariantInfo)
 
     | '[' ->
         i <- i + 1
